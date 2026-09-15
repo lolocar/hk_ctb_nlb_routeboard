@@ -1,0 +1,16 @@
+# 数据库
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# TLS 密钥（证书可提交，密钥不提交）
+webapp/server.key
+
+# 生成的前端数据
+webapp/stops.json
+webapp/stops_meta.json
+
+# Python 缓存
+__pycache__/
+*.pyc

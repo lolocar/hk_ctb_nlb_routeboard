@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>城巴嶼巴到站時間</title>
+<style>
+  :root {
+    --bg: #f5f5f5;
+    --card: #fff;
+    --text: #222;
+    --text2: #666;
+    --accent: #1a73e8;
+    --border: #e0e0e0;
+    --eta-soon: #d32f2f;
+    --eta-mid: #f57c00;
+    --eta-far: #388e3c;
+    --eta-none: #9e9e9e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 12px 24px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    position: sticky;
+    top: 0;
+    margin: 0 -12px;
+    background: var(--accent);
+    z-index: 10;
+  }
+  header h1 {
+    font-size: 1.2rem;
+    color: #fff;
+  }
+  header .lang-switch button {
+    background: transparent;
+    color: #fff;
+    border-color: rgba(255,255,255,0.5);
+  }
+  header .lang-switch button.active {
+    background: #fff;
+    color: var(--accent);
+    border-color: #fff;
+  }
+  .lang-switch {
+    display: flex;
+    gap: 4px;
+  }
+  .lang-switch button {
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .lang-switch button.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .search-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .search-bar input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    background: var(--card);
+  }
+  .search-bar .loc-btn {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  .status-bar {
+    font-size: 0.8rem;
+    color: var(--text2);
+    margin-bottom: 8px;
+    min-height: 1.2em;
+  }
+  .section-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text2);
+    margin: 16px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stop-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: box-shadow 0.15s;
+  }
+  .stop-card:active { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .stop-card .stop-info { flex: 1; min-width: 0; }
+  .stop-card .stop-name {
+    font-size: 1rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stop-card .stop-meta {
+    font-size: 0.8rem;
+    color: var(--text2);
+    margin-top: 2px;
+  }
+  .stop-card .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 4px;
+    font-weight: 600;
+  }
+  .badge.ctb { background: #e3f2fd; color: #1565c0; }
+  .badge.nlb { background: #fce4ec; color: #c2185b; }
+  .star-btn {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    color: #bbb;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+  .star-btn.active { color: #f5a623; }
+  .stop-detail {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .stop-detail .back-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .stop-detail .stop-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .stop-detail .stop-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    flex: 1;
+  }
+  .stop-detail .star-btn { font-size: 1.6rem; }
+  .show-all-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+  .stop-detail .stop-loc {
+    font-size: 0.85rem;
+    color: var(--text2);
+    margin-bottom: 16px;
+  }
+  .refresh-note {
+    font-size: 0.75rem;
+    color: var(--text2);
+    text-align: right;
+    margin-bottom: 8px;
+  }
+  .route-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .route-row:last-child { border-bottom: none; }
+  .route-no {
+    font-weight: 700;
+    font-size: 1rem;
+    min-width: 56px;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #f0f0f0;
+  }
+  .route-no.ctb { background: #e3f2fd; color: #1565c0; }
+  .route-no.nlb { background: #fce4ec; color: #c2185b; }
+  .route-dest {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .eta-badge {
+    font-weight: 700;
+    font-size: 1rem;
+    min-width: 64px;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: #fff;
+  }
+  .eta-soon { background: var(--eta-soon); }
+  .eta-mid { background: var(--eta-mid); }
+  .eta-far { background: var(--eta-far); }
+  .eta-none { background: var(--eta-none); }
+  .route-rmk {
+    font-size: 0.75rem;
+    color: var(--text2);
+    margin-top: 2px;
+  }
+  .loading {
+    text-align: center;
+    padding: 32px;
+    color: var(--text2);
+  }
+  .data-banner {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="app-title">城巴嶼巴到站時間</h1>
+  <div class="lang-switch">
+    <button data-lang="zh-hant" class="active">繁</button>
+    <button data-lang="en">EN</button>
+  </div>
+</header>
+
+<div class="search-bar">
+  <input type="text" id="search-input" placeholder="搜尋巴士站...">
+  <button class="loc-btn" id="loc-btn" title="定位">📍</button>
+</div>
+
+<div class="status-bar" id="status-bar"></div>
+<div id="data-banner" class="data-banner hidden"></div>
+
+<!-- 列表视图 -->
+<div id="list-view">
+  <div id="subscribed-section" class="hidden">
+    <div class="section-label" id="label-subscribed"></div>
+    <div id="subscribed-list"></div>
+  </div>
+  <div id="nearby-section" class="hidden">
+    <div class="section-label" id="label-nearby"></div>
+    <div id="nearby-list"></div>
+  </div>
+  <div id="all-section" class="hidden">
+    <div class="section-label" id="label-all"></div>
+    <div id="all-list"></div>
+  </div>
+  <button id="show-all-btn" class="show-all-btn hidden"></button>
+</div>
+
+<!-- 詳情視圖 -->
+<div id="detail-view" class="hidden">
+  <div class="stop-detail">
+    <button class="back-btn" id="back-btn">← 返回</button>
+    <div class="stop-title-row">
+      <div class="stop-title" id="detail-title"></div>
+      <button class="star-btn" id="detail-star" title="訂閱">★</button>
+    </div>
+    <div class="stop-loc" id="detail-loc"></div>
+    <div class="refresh-note" id="refresh-note"></div>
+    <div id="eta-list"></div>
+  </div>
+</div>
+
+<script>
+// ===== 多語言 =====
+const I18N = {
+  'zh-hant': {
+    appTitle: '城巴嶼巴到站時間',
+    searchPlaceholder: '搜尋巴士站...',
+    labelSubscribed: '⭐ 已訂閱',
+    labelNearby: '📍 附近 500m',
+    labelAll: '全部巴士站',
+    locating: '正在取得位置...',
+    locFailed: '無法取得位置',
+    nearbyCount: n => `附近 ${n} 個`,
+    allCount: n => `共 ${n} 個`,
+    noResults: '找不到匹配的巴士站',
+    refreshNote: t => `每 30 秒自動更新 · 上次更新 ${t}`,
+    loading: '載入中...',
+    etaNow: '即將到站',
+    etaMin: m => `${m} 分鐘`,
+    etaExact: t => t,
+    noEta: '暫無班次',
+    stopCount: n => `${n} 條路線`,
+    dataUpdated: 'ℹ️ 站点数据已更新，列表已刷新',
+    showAll: '查看全部巴士站',
+    hideAll: '收起，只看附近',
+    nearbyOnly: '目前只顯示附近 500m 的巴士站',
+  },
+  'en': {
+    appTitle: 'CTB and NLB Arrival Times',
+    searchPlaceholder: 'Search bus stop...',
+    labelSubscribed: '⭐ Subscribed',
+    labelNearby: '📍 Nearby 500m',
+    labelAll: 'All Bus Stops',
+    locating: 'Getting location...',
+    locFailed: 'Location unavailable',
+    nearbyCount: n => `${n} nearby`,
+    allCount: n => `${n} total`,
+    noResults: 'No matching bus stops',
+    refreshNote: t => `Auto-refresh 30s · Updated ${t}`,
+    loading: 'Loading...',
+    etaNow: 'Arriving',
+    etaMin: m => `${m} min`,
+    etaExact: t => t,
+    noEta: 'No service',
+    stopCount: n => `${n} routes`,
+    dataUpdated: 'ℹ️ Stop data updated, list refreshed',
+    showAll: 'Show all bus stops',
+    hideAll: 'Collapse, nearby only',
+    nearbyOnly: 'Showing stops within 500m only',
+  }
+};
+
+let lang = getCookie('lang') || 'zh-hant';
+let allStops = [];
+let nearbyStops = [];
+let userLoc = null;
+let currentStop = null;
+let etaTimer = null;
+let lastEtaUpdate = null;
+let lastMetaUpdated = null;
+
+// ===== Cookie 工具 =====
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function setCookie(name, value, days) {
+  const d = new Date();
+  d.setTime(d.getTime() + (days || 365) * 864e5);
+  document.cookie = `${name}=${encodeURIComponent(value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+}
+
+// ===== 訂閱管理（Cookie） =====
+function getSubscribed() {
+  const raw = getCookie('subscribed');
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch { return []; }
+}
+function setSubscribed(list) {
+  setCookie('subscribed', JSON.stringify(list));
+}
+function toggleSubscribe(op, id) {
+  const list = getSubscribed();
+  const key = op + ':' + id;
+  const idx = list.indexOf(key);
+  if (idx >= 0) list.splice(idx, 1);
+  else list.push(key);
+  setSubscribed(list);
+}
+function isSubscribed(op, id) {
+  return getSubscribed().includes(op + ':' + id);
+}
+
+// ===== 工具 =====
+function t(key, ...args) {
+  const v = I18N[lang][key];
+  return typeof v === 'function' ? v(...args) : v;
+}
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+function stopName(s) {
+  if (lang === 'en') return s.en || s.tc;
+  return s.tc || s.en;
+}
+function stopLoc(s) {
+  if (lang === 'en') return s.loc_en || s.loc_tc;
+  return s.loc_tc || s.loc_en;
+}
+function formatEta(etaStr) {
+  if (!etaStr) return null;
+  const d = new Date(etaStr);
+  const now = new Date();
+  const diffMin = Math.round((d - now) / 60000);
+  if (diffMin <= 1) return { text: t('etaNow'), cls: 'eta-soon', min: 0 };
+  if (diffMin < 10) return { text: t('etaMin', diffMin), cls: 'eta-soon', min: diffMin };
+  if (diffMin < 30) return { text: t('etaMin', diffMin), cls: 'eta-mid', min: diffMin };
+  return { text: t('etaMin', diffMin), cls: 'eta-far', min: diffMin };
+}
+function timeStr() {
+  const d = new Date();
+  return d.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'zh-HK', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+
+// ===== 渲染 =====
+function renderStopCard(s, withDistance) {
+  const sub = isSubscribed(s.op, s.id);
+  const dist = withDistance && userLoc
+    ? Math.round(haversine(userLoc.lat, userLoc.lng, s.lat, s.lng))
+    : null;
+  const distStr = dist !== null ? ` · ${dist < 1000 ? dist + 'm' : (dist/1000).toFixed(1) + 'km'}` : '';
+  return `
+    <div class="stop-card" data-op="${s.op}" data-id="${s.id}">
+      <button class="star-btn ${sub ? 'active' : ''}" data-sub-op="${s.op}" data-sub-id="${s.id}">★</button>
+      <div class="stop-info">
+        <div class="stop-name">${stopName(s)}</div>
+        <div class="stop-meta">
+          <span class="badge ${s.op.toLowerCase()}">${s.op}</span>
+          ${stopLoc(s) || ''}${distStr}
+        </div>
+      </div>
+    </div>`;
+}
+
+let showAll = false; // 定位成功後預設只看附近，點擊按鈕才展開全部
+
+function renderList() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  let filtered = allStops;
+
+  if (q) {
+    filtered = allStops.filter(s =>
+      (s.tc || '').toLowerCase().includes(q) ||
+      (s.sc || '').toLowerCase().includes(q) ||
+      (s.en || '').toLowerCase().includes(q) ||
+      (s.id || '').toLowerCase().includes(q)
+    );
+  }
+
+  const subKeys = new Set(getSubscribed());
+  const subscribed = filtered.filter(s => subKeys.has(s.op + ':' + s.id));
+  const nearby = nearbyStops.filter(s => filtered.includes(s));
+
+  const subSection = document.getElementById('subscribed-section');
+  const nearSection = document.getElementById('nearby-section');
+  const allSection = document.getElementById('all-section');
+  const showAllBtn = document.getElementById('show-all-btn');
+
+  // 搜尋模式下只顯示匹配結果
+  if (q) {
+    subSection.classList.add('hidden');
+    nearSection.classList.add('hidden');
+    showAllBtn.classList.add('hidden');
+    allSection.classList.remove('hidden');
+    document.getElementById('label-all').textContent = t('allCount', filtered.length);
+    document.getElementById('all-list').innerHTML = filtered.length
+      ? filtered.map(s => renderStopCard(s, true)).join('')
+      : `<div class="loading">${t('noResults')}</div>`;
+    return;
+  }
+
+  // 訂閱區塊
+  if (subscribed.length) {
+    subSection.classList.remove('hidden');
+    document.getElementById('label-subscribed').textContent = t('labelSubscribed');
+    document.getElementById('subscribed-list').innerHTML =
+      subscribed.map(s => renderStopCard(s, true)).join('');
+  } else {
+    subSection.classList.add('hidden');
+  }
+
+  // 附近區塊
+  if (nearby.length && userLoc) {
+    nearSection.classList.remove('hidden');
+    document.getElementById('label-nearby').textContent = t('nearbyCount', nearby.length);
+    document.getElementById('nearby-list').innerHTML =
+      nearby.map(s => renderStopCard(s, true)).join('');
+  } else {
+    nearSection.classList.add('hidden');
+  }
+
+  // 全部區塊：
+  // - 未定位成功：顯示全部（無 500m 概念）
+  // - 定位成功：預設隱藏，點"查看全部"才顯示
+  const hasLoc = !!userLoc;
+  const expandAll = !hasLoc || showAll;
+  if (expandAll) {
+    allSection.classList.remove('hidden');
+    document.getElementById('label-all').textContent = t('allCount', allStops.length);
+    document.getElementById('all-list').innerHTML =
+      allStops.map(s => renderStopCard(s, hasLoc)).join('');
+    // 已定位且已展開：顯示"收起"按鈕；未定位：無按鈕
+    if (hasLoc) {
+      showAllBtn.textContent = t('hideAll');
+      showAllBtn.classList.remove('hidden');
+    } else {
+      showAllBtn.classList.add('hidden');
+    }
+  } else {
+    allSection.classList.add('hidden');
+    showAllBtn.textContent = t('showAll');
+    showAllBtn.classList.remove('hidden');
+  }
+}
+
+function toggleShowAll() {
+  showAll = !showAll;
+  renderList();
+}
+
+// ===== 詳情頁 =====
+function openStop(op, id) {
+  const s = allStops.find(x => x.op === op && x.id === id);
+  if (!s) return;
+  currentStop = s;
+  document.getElementById('list-view').classList.add('hidden');
+  document.getElementById('detail-view').classList.remove('hidden');
+  document.getElementById('detail-title').textContent = stopName(s);
+  document.getElementById('detail-loc').textContent = stopLoc(s) || '';
+  syncDetailStar();
+  document.getElementById('eta-list').innerHTML = `<div class="loading">${t('loading')}</div>`;
+  document.getElementById('refresh-note').textContent = '';
+  fetchEta();
+  startEtaTimer();
+  window.scrollTo(0, 0);
+}
+
+function syncDetailStar() {
+  if (!currentStop) return;
+  const star = document.getElementById('detail-star');
+  star.classList.toggle('active', isSubscribed(currentStop.op, currentStop.id));
+}
+
+function closeStop() {
+  currentStop = null;
+  document.getElementById('detail-view').classList.add('hidden');
+  document.getElementById('list-view').classList.remove('hidden');
+  stopEtaTimer();
+}
+
+async function fetchEta() {
+  if (!currentStop) return;
+  const { op, id } = currentStop;
+  const co = op.toLowerCase();
+  const url = `https://rt.data.gov.hk/v1/transport/batch/stop-eta/${co}/${id}?lang=${lang}`;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    renderEta(data.data || []);
+  } catch (e) {
+    document.getElementById('eta-list').innerHTML =
+      `<div class="loading">Error: ${e.message}</div>`;
+  }
+}
+
+function renderEta(records) {
+  // 按 route + dest 分組（CTB 同方向 dest 相同；NLB 不同方向 dest 不同，dir 皆 null）
+  const groups = new Map();
+  for (const r of records) {
+    const key = `${r.route}|${r.dest || ''}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  }
+
+  const rows = [];
+  for (const [key, recs] of groups) {
+    // 取下一班：優先 eta_seq=1，否則第一條 eta 非空
+    const next = recs.find(r => r.eta_seq === 1) || recs.find(r => r.eta) || recs[0];
+    const [route] = key.split('|');
+    const eta = formatEta(next.eta);
+    const rmk = next.rmk || '';
+    const dest = next.dest || '';
+
+    rows.push({
+      route, dest, eta, rmk,
+      op: next.co ? next.co.toLowerCase() : currentStop.op.toLowerCase(),
+    });
+  }
+
+  // 排序：有 ETA 的在前（按分鐘），無 ETA 的在後
+  rows.sort((a, b) => {
+    if (a.eta && b.eta) return a.eta.min - b.eta.min;
+    if (a.eta) return -1;
+    if (b.eta) return 1;
+    return a.route.localeCompare(b.route);
+  });
+
+  const el = document.getElementById('eta-list');
+  if (!rows.length) {
+    el.innerHTML = `<div class="loading">${t('noEta')}</div>`;
+  } else {
+    el.innerHTML = rows.map(r => `
+      <div class="route-row">
+        <div class="route-no ${r.op}">${r.route}</div>
+        <div class="route-dest" title="${r.dest}">${r.dest}</div>
+        <div class="eta-badge ${r.eta ? r.eta.cls : 'eta-none'}">${r.eta ? r.eta.text : t('noEta')}</div>
+      </div>
+      ${r.rmk ? `<div class="route-rmk" style="padding-left:66px">${r.rmk}</div>` : ''}
+    `).join('');
+  }
+
+  lastEtaUpdate = timeStr();
+  document.getElementById('refresh-note').textContent = t('refreshNote', lastEtaUpdate);
+}
+
+function startEtaTimer() {
+  stopEtaTimer();
+  etaTimer = setInterval(fetchEta, 30000);
+}
+function stopEtaTimer() {
+  if (etaTimer) { clearInterval(etaTimer); etaTimer = null; }
+}
+
+// ===== LBS =====
+function locate() {
+  const bar = document.getElementById('status-bar');
+  bar.textContent = t('locating');
+  if (!navigator.geolocation) {
+    bar.textContent = t('locFailed');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      computeNearby();
+      bar.textContent = '';
+      renderList();
+    },
+    err => {
+      bar.textContent = t('locFailed') + ` (${err.code})`;
+      renderList();
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+function computeNearby() {
+  if (!userLoc) { nearbyStops = []; return; }
+  // 保留原对象引用（renderList 用 filtered.includes(s) 按引用匹配），只附加 dist 字段
+  nearbyStops = allStops
+    .map(s => { s.dist = haversine(userLoc.lat, userLoc.lng, s.lat, s.lng); return s; })
+    .filter(s => s.dist <= 500)
+    .sort((a, b) => a.dist - b.dist);
+}
+
+// ===== 初始化 =====
+function applyLang() {
+  document.documentElement.lang = lang === 'en' ? 'en' : 'zh-Hant';
+  document.getElementById('app-title').textContent = t('appTitle');
+  document.getElementById('search-input').placeholder = t('searchPlaceholder');
+  document.querySelectorAll('.lang-switch button').forEach(b =>
+    b.classList.toggle('active', b.dataset.lang === lang));
+  setCookie('lang', lang);
+  renderList();
+  if (currentStop) {
+    document.getElementById('detail-title').textContent = stopName(currentStop);
+    document.getElementById('detail-loc').textContent = stopLoc(currentStop) || '';
+    syncDetailStar();
+    fetchEta();
+  }
+}
+
+// ===== 数据更新感知（轮询轻量 meta 文件） =====
+async function loadDataMeta() {
+  try {
+    const r = await fetch('stops_meta.json?t=' + Date.now());
+    const meta = await r.json();
+    if (lastMetaUpdated && meta.updated !== lastMetaUpdated) {
+      const resp = await fetch('stops.json?t=' + Date.now());
+      const data = await resp.json();
+      allStops = data.stops;
+      computeNearby();
+      renderList();
+      showDataBanner();
+    }
+    lastMetaUpdated = meta.updated;
+  } catch (e) { /* meta 文件不存在时忽略 */ }
+}
+function showDataBanner() {
+  const b = document.getElementById('data-banner');
+  b.textContent = t('dataUpdated');
+  b.classList.remove('hidden');
+  setTimeout(() => b.classList.add('hidden'), 8000);
+}
+
+async function init() {
+  const resp = await fetch('stops.json');
+  const data = await resp.json();
+  allStops = data.stops;
+  // 记录初始 meta（用于后续轮询比对）
+  try {
+    const mr = await fetch('stops_meta.json');
+    lastMetaUpdated = (await mr.json()).updated;
+  } catch (e) { /* 忽略 */ }
+  applyLang();
+  locate();
+  setInterval(loadDataMeta, 10 * 60 * 1000); // 每 10 分钟检查一次
+}
+
+// ===== 事件綁定 =====
+document.addEventListener('click', e => {
+  const star = e.target.closest('.star-btn');
+  if (star) {
+    e.stopPropagation();
+    toggleSubscribe(star.dataset.subOp, star.dataset.subId);
+    renderList();
+    return;
+  }
+  const card = e.target.closest('.stop-card');
+  if (card && !e.target.closest('.star-btn')) {
+    openStop(card.dataset.op, card.dataset.id);
+  }
+});
+
+document.getElementById('back-btn').addEventListener('click', closeStop);
+document.getElementById('loc-btn').addEventListener('click', locate);
+document.getElementById('detail-star').addEventListener('click', () => {
+  if (!currentStop) return;
+  toggleSubscribe(currentStop.op, currentStop.id);
+  syncDetailStar();
+  renderList(); // 同步列表頁的訂閱狀態
+});
+document.getElementById('show-all-btn').addEventListener('click', toggleShowAll);
+document.getElementById('search-input').addEventListener('input', renderList);
+document.querySelectorAll('.lang-switch button').forEach(b => {
+  b.addEventListener('click', () => { lang = b.dataset.lang; applyLang(); });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && currentStop) closeStop();
+});
+
+init();
+</script>
+</body>
+</html>
