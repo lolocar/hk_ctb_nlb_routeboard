@@ -137,8 +137,8 @@
     margin-right: 4px;
     font-weight: 600;
   }
-  .badge.ctb { background: #e3f2fd; color: #1565c0; }
-  .badge.nlb { background: #fce4ec; color: #c2185b; }
+  .badge.ctb { background: #F1D709; color: #0056A5; }
+  .badge.nlb { background: #248F79; color: #FFFFFF; }
   .star-btn {
     background: none;
     border: none;
@@ -219,8 +219,8 @@
     border-radius: 6px;
     background: #f0f0f0;
   }
-  .route-no.ctb { background: #e3f2fd; color: #1565c0; }
-  .route-no.nlb { background: #fce4ec; color: #c2185b; }
+  .route-no.ctb { background: #F1D709; color: #0056A5; }
+  .route-no.nlb { background: #248F79; color: #FFFFFF; }
   .route-dest {
     flex: 1;
     min-width: 0;
@@ -442,6 +442,9 @@ function timeStr() {
 }
 
 // ===== 渲染 =====
+function opBadge(op) {
+  return `<span class="badge ${op.toLowerCase()}">${op}</span>`;
+}
 function renderStopCard(s, withDistance) {
   const sub = isSubscribed(s.op, s.id);
   const dist = withDistance && userLoc
@@ -454,7 +457,7 @@ function renderStopCard(s, withDistance) {
       <div class="stop-info">
         <div class="stop-name">${stopName(s)}</div>
         <div class="stop-meta">
-          <span class="badge ${s.op.toLowerCase()}">${s.op}</span>
+          ${opBadge(s.op)}
           ${stopLoc(s) || ''}${distStr}
         </div>
       </div>

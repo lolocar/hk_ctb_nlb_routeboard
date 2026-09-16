@@ -1,6 +1,6 @@
 # Route Board — CTB & NLB Bus Arrival Times
 
-A bus-arrival web app covering two Hong Kong operators: **Citybus (CTB)** and **New World First Bus (NLB)**. It shows expected arrival times (ETAs) for the routes serving a bus stop, finds stops near you via GPS, and lets you subscribe to the stops you care about.
+A bus-arrival web app covering two Hong Kong operators: **Citybus (CTB)** and **New Lanto Bus (NLB)**. It shows expected arrival times (ETAs) for the routes serving a bus stop, finds stops near you via GPS, and lets you subscribe to the stops you care about.
 
 ## Features
 
@@ -37,9 +37,9 @@ export_stops.py         # CLI: export stops.json + stops_meta.json for the web a
 maintenance.py          # detect new routes → import their stops → re-export (CLI: python maintenance.py [--check-only])
 importers/
   ctb.py                # Citybus route list fetch/parse/import
-  nlb.py                # New World First Bus route list fetch/parse/import
+  nlb.py                # New Lanto Bus route list fetch/parse/import
   ctb_stops.py          # Citybus stops: two-phase import (sequences, then per-stop details)
-  nlb_stops.py          # New World First Bus stops: one-phase import
+  nlb_stops.py          # New Lanto Bus stops: one-phase import
 webapp/
   index.html            # single-file web app (HTML + CSS + JS, zero dependencies)
   stops.json            # exported stop data (generated, do not edit)
