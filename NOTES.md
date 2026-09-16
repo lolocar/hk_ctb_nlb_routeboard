@@ -188,6 +188,14 @@ json.dump({"generated":"...","count":len(stops),"stops":stops}, open('webapp/sto
 - [ ] 数据刷新频率 / 轮询间隔
 - [ ] 用户订阅的存储方式（localStorage / 后端）
 
+## 站点坐标人工覆写（stop_override 表，长期约束）
+数据源坐标不准时，在 `stop_override` 表登记人工坐标；每次站点导入/维护后
+`db.apply_stop_overrides(conn)` 自动套用，保证覆写不被数据源覆盖。
+- NLB 152 深圳灣口岸：数据源坐标偏约 660m，改用 CTB 003208 的坐标
+  (22.501662252091, 113.94518812053)。
+  新增覆写: `INSERT OR REPLACE INTO stop_override (operator, source_stop_id, latitude, longitude, note) VALUES (...)`
+  再重跑 `python export_stops.py`（或等每日维护）。
+
 ## 备注
 - 工作目录：`D:\git2\hk_ctb_nlb_routeboard`
 - 项目名中的 ctb / nlb 即城巴 / 新巴

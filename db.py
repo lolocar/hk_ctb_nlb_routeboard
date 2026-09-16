@@ -84,6 +84,17 @@ CREATE TABLE IF NOT EXISTS route_stop (
 
 CREATE INDEX IF NOT EXISTS idx_route_stop_route ON route_stop (operator, source_route_id, direction);
 CREATE INDEX IF NOT EXISTS idx_route_stop_stop ON route_stop (source_stop_id);
+
+-- 站点坐标人工覆写（数据源坐标不准时手动指定，导入/维护后自动套用）。
+-- 例: NLB 152 深圳灣口岸 → 用 CTB 003208 的坐标。
+CREATE TABLE IF NOT EXISTS stop_override (
+    operator TEXT NOT NULL,
+    source_stop_id TEXT NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    note TEXT,
+    PRIMARY KEY (operator, source_stop_id)
+);
 """
 
 
@@ -227,3 +238,19 @@ def replace_operator_stops(conn: sqlite3.Connection, operator: str) -> None:
     """导入前清掉该公司的旧站点与路线-站点关联（全量替换策略）。"""
     conn.execute("DELETE FROM route_stop WHERE operator = ?", (operator,))
     conn.execute("DELETE FROM stop WHERE operator = ?", (operator,))
+
+
+def apply_stop_overrides(conn: sqlite3.Connection) -> int:
+    """将 stop_override 表中的人工坐标覆写套用到 stop 表。返回覆写的站点数。
+
+    在每次站点导入/维护后调用，确保人工指定的坐标不会被数据源覆盖。
+    """
+    cur = conn.execute(
+        """
+        UPDATE stop SET latitude = o.latitude, longitude = o.longitude
+        FROM stop_override o
+        WHERE stop.operator = o.operator
+          AND stop.source_stop_id = o.source_stop_id
+        """
+    )
+    return cur.rowcount or 0

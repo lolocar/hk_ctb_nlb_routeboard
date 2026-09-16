@@ -21,7 +21,7 @@ import time
 import urllib.request
 from datetime import datetime, timezone, timedelta
 
-from db import upsert_stop, upsert_route_stop
+from db import upsert_stop, upsert_route_stop, apply_stop_overrides
 
 NLB_STOP_URL = "https://rt.data.gov.hk/v2/transport/nlb/stop.php"
 HKT = timezone(timedelta(hours=8))
@@ -104,6 +104,10 @@ def import_nlb_stops(conn) -> tuple[int, int]:
             )
             link_count += 1
         time.sleep(SLEEP)
+
+    n_override = apply_stop_overrides(conn)
+    if n_override:
+        print(f"NLB: applied {n_override} coordinate override(s) from stop_override")
 
     conn.execute(
         "INSERT INTO meta (key, value) VALUES ('nlb_stops_last_fetch', ?) "

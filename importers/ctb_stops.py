@@ -28,7 +28,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone, timedelta
 
-from db import upsert_stop, upsert_route_stop
+from db import upsert_stop, upsert_route_stop, apply_stop_overrides
 
 BASE = "https://rt.data.gov.hk/v1/transport/citybus-nwfb"
 HKT = timezone(timedelta(hours=8))
@@ -200,5 +200,8 @@ if __name__ == "__main__":
     conn = get_conn()
     replace_operator_stops(conn, "CTB")
     n_stops, n_links = import_ctb_stops(conn)
+    n_override = apply_stop_overrides(conn)
+    if n_override:
+        print(f"CTB: applied {n_override} coordinate override(s) from stop_override")
     conn.commit()
     print(f"CTB: imported {n_stops} stops, {n_links} route-stop links")

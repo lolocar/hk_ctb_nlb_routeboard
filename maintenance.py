@@ -17,7 +17,7 @@ import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-from db import get_conn, upsert_route, upsert_stop, upsert_route_stop
+from db import get_conn, upsert_route, upsert_stop, upsert_route_stop, apply_stop_overrides
 from importers.ctb import fetch_ctb_routes, parse_ctb_routes
 from importers.nlb import fetch_nlb_routes, parse_nlb_routes
 from importers.ctb_stops import fetch_ctb_route_stops, fetch_ctb_stop_detail, SLEEP as CTB_SLEEP
@@ -156,6 +156,12 @@ def run_maintenance(db_path=DEFAULT_DB, out_dir=DEFAULT_OUT_DIR, check_only: boo
             s, l = import_new_nlb_stops(conn, nlb_new, now)
             report["nlb_new_stops"] = s
             report["nlb_new_links"] = l
+
+        # 套用人工坐标覆写（stop_override 表），防止数据源坐标覆盖人工修正
+        n_override = apply_stop_overrides(conn)
+        if n_override:
+            report["overrides_applied"] = n_override
+            print(f"[maintenance] applied {n_override} coordinate override(s)", flush=True)
         conn.commit()
 
         # 3) 重新导出 stops.json
