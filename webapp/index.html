@@ -654,22 +654,26 @@ function stopEtaTimer() {
 }
 
 // ===== LBS =====
-function locate() {
+function locate(silent = false) {
+  // 首次（或最近一次）定位失敗後不再自動刷新，僅手動點按鈕才重試
+  if (silent && !userLoc) return;
   const bar = document.getElementById('status-bar');
-  bar.textContent = t('locating');
+  // 靜默刷新（定時器觸發）不顯示狀態提示
+  if (!silent) bar.textContent = t('locating');
   if (!navigator.geolocation) {
-    bar.textContent = t('locFailed');
+    if (!silent) bar.textContent = t('locFailed');
     return;
   }
   navigator.geolocation.getCurrentPosition(
     pos => {
       userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       computeNearby();
-      bar.textContent = '';
+      if (!silent) bar.textContent = '';
       renderList();
     },
     err => {
-      bar.textContent = t('locFailed') + ` (${err.code})`;
+      userLoc = null; // 標記失敗，停止後續定時刷新
+      if (!silent) bar.textContent = t('locFailed') + ` (${err.code})`;
       renderList();
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
@@ -736,6 +740,7 @@ async function init() {
   } catch (e) { /* 忽略 */ }
   applyLang();
   locate();
+  setInterval(() => locate(true), 60 * 1000); // 每 60 秒靜默刷新 LBS
   setInterval(loadDataMeta, 10 * 60 * 1000); // 每 10 分钟检查一次
 }
 
